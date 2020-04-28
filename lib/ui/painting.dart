@@ -1908,6 +1908,8 @@ class EngineLayer extends NativeFieldWrapperClass2 {
   EngineLayer._();
 }
 
+typedef PathFactory = Path Function();
+
 /// A complex, one-dimensional subset of a plane.
 ///
 /// A path consists of a number of sub-paths, and a _current point_.
@@ -1927,25 +1929,58 @@ class EngineLayer extends NativeFieldWrapperClass2 {
 /// used to create clip regions using [Canvas.clipPath].
 @pragma('vm:entry-point')
 class Path extends NativeFieldWrapperClass2 {
-  /// Create a new empty [Path] object.
+  static PathFactory _pathFactory = () => Path.rawPath();
+
+  /// Create a new empty [Path] object from a factory.
   @pragma('vm:entry-point')
-  Path() { _constructor(); }
+  factory Path() {
+    Path p = Path._pathFactory();
+    p._constructor();
+    return p;
+  }
   void _constructor() native 'Path_constructor';
+
+  /// Changes the active [Path] factory (for instance, to one capable of
+  /// recording path operations).  Note that this probably should only be
+  /// called on initialization, and never called again after a [Path] has
+  /// been created.
+  static void setPathFactory(PathFactory p) {
+    _pathFactory = p;
+  }
 
   /// Avoids creating a new native backing for the path for methods that will
   /// create it later, such as [Path.from], [shift] and [transform].
-  Path._();
+  ///
+  /// Should never be directly called (Paths should only be created from
+  /// [Path()] or [Path.from], but is required so that subclasses of Path
+  /// can have a base constructor to override, and so that
+  /// [Path.setPathFactory] can be reset.
+  Path.rawPath();
 
   /// Creates a copy of another [Path].
   ///
   /// This copy is fast and does not require additional memory unless either
   /// the `source` path or the path returned by this constructor are modified.
   factory Path.from(Path source) {
-    final Path clonedPath = Path._();
-    source._clone(clonedPath);
+    final Path clonedPath = Path._pathFactory();
+    source._clone(clonedPath); // encompasses _constructor on clonedPath
+    clonedPath._clonedFrom(source);
     return clonedPath;
   }
   void _clone(Path outPath) native 'Path_clone';
+
+  /// Notification from [Path.from] that a Path is a clone of another path.
+  ///
+  /// Override this to get notification that a Path needs to copy its
+  /// contents from a source path.
+  void _clonedFrom(Path cloned) { }
+
+  /// Notification from [Path.from] that a Path is an extracted version of
+  /// another path.
+  ///
+  /// Override this to get notification that a Path needs to copy its
+  /// contents from a source path.
+  void _extractedFrom(Path cloned, int contourIndex, double start, double end, {bool startWithMoveTo = true}) { }
 
   /// Determines how the interior of this path is calculated.
   ///
@@ -2210,21 +2245,37 @@ class Path extends NativeFieldWrapperClass2 {
   /// sub-path translated by the given offset.
   Path shift(Offset offset) {
     assert(_offsetIsValid(offset));
-    final Path path = Path._();
+    final Path path = Path._pathFactory();
     _shift(path, offset.dx, offset.dy);
+    path._shiftedFrom(this, offset);
     return path;
   }
   void _shift(Path outPath, double dx, double dy) native 'Path_shift';
+
+  /// Notification from [Path.from] that a Path is a shifted version of
+  /// another path.
+  ///
+  /// Override this to get notification that a Path needs to copy its
+  /// contents from a source path.
+  void _shiftedFrom(Path cloned, Offset offset) { }
 
   /// Returns a copy of the path with all the segments of every
   /// sub-path transformed by the given matrix.
   Path transform(Float64List matrix4) {
     assert(_matrix4IsValid(matrix4));
-    final Path path = Path._();
+    final Path path = Path._pathFactory();
     _transform(path, matrix4);
+    path._transformedFrom(this, matrix4);
     return path;
   }
   void _transform(Path outPath, Float64List matrix4) native 'Path_transform';
+
+  /// Notification from [Path.from] that a Path is a transformed version of
+  /// another path.
+  ///
+  /// Override this to get notification that a Path needs to copy its
+  /// contents from a source path.
+  void _transformedFrom(Path cloned, Float64List matrix4) { }
 
   /// Computes the bounding rectangle for this path.
   ///
@@ -2481,8 +2532,11 @@ class PathMetric {
 }
 
 class _PathMeasure extends NativeFieldWrapperClass2 {
+  Path fromPath;
+
   _PathMeasure(Path path, bool forceClosed) {
     _constructor(path, forceClosed);
+    fromPath = path;
   }
   void _constructor(Path path, bool forceClosed) native 'PathMeasure_constructor';
 
@@ -2509,8 +2563,9 @@ class _PathMeasure extends NativeFieldWrapperClass2 {
 
   Path extractPath(int contourIndex, double start, double end, {bool startWithMoveTo = true}) {
     assert(contourIndex <= currentContourIndex, 'Iterator must be advanced before index $contourIndex can be used.');
-    final Path path = Path._();
+    final Path path = Path._pathFactory();
     _extractPath(path, contourIndex, start, end, startWithMoveTo: startWithMoveTo);
+    path._extractedFrom(fromPath, contourIndex, start, end, startWithMoveTo: startWithMoveTo);
     return path;
   }
   void _extractPath(Path outPath, int contourIndex, double start, double end, {bool startWithMoveTo = true}) native 'PathMeasure_getSegment';
