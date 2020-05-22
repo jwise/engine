@@ -1985,7 +1985,11 @@ class Path extends NativeFieldWrapperClass2 {
   /// Override this to get notification that a Path needs to copy its
   /// contents from a source path.
   void factoryExtractedFrom(Path cloned, int contourIndex, double start, double end, {bool startWithMoveTo = true}) { }
-
+  
+  Int32List getVerbs() native 'Path_getVerbs';
+  Float32List getPoints() native 'Path_getPoints';
+  Float32List getWeights() native 'Path_getWeights';
+  
   /// Determines how the interior of this path is calculated.
   ///
   /// Defaults to the non-zero winding rule, [PathFillType.nonZero].

@@ -42,6 +42,10 @@ class CanvasPath : public RefCountedDartWrappable<CanvasPath> {
 
   int getFillType();
   void setFillType(int fill_type);
+  
+  tonic::Int32List getVerbs();
+  tonic::Float32List getPoints();
+  tonic::Float32List getWeights();
 
   void moveTo(float x, float y);
   void relativeMoveTo(float x, float y);

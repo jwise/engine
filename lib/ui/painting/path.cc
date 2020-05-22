@@ -14,6 +14,10 @@
 #include "third_party/tonic/dart_binding_macros.h"
 #include "third_party/tonic/dart_library_natives.h"
 
+/* "Well, if they didn't want to me to include it, they shouldn't have
+ * distributed it in the source."  */
+#include "third_party/skia/src/core/SkPathPriv.h"
+
 using tonic::ToDart;
 
 namespace flutter {
@@ -43,6 +47,9 @@ IMPLEMENT_WRAPPERTYPEINFO(ui, Path);
   V(Path, extendWithPath)            \
   V(Path, extendWithPathAndMatrix)   \
   V(Path, getFillType)               \
+  V(Path, getVerbs)                  \
+  V(Path, getPoints)                 \
+  V(Path, getWeights)                \
   V(Path, lineTo)                    \
   V(Path, moveTo)                    \
   V(Path, quadraticBezierTo)         \
@@ -290,6 +297,37 @@ tonic::Float32List CanvasPath::getBounds() {
   rect[2] = bounds.right();
   rect[3] = bounds.bottom();
   return rect;
+}
+
+tonic::Int32List CanvasPath::getVerbs() {
+  int nverbs = path_.countVerbs();
+  tonic::Int32List verbs(Dart_NewTypedData(Dart_TypedData_kInt32, nverbs));
+  int i = 0;
+  for (SkPath::Verb verb : SkPathPriv::Verbs(path_)) {
+    verbs[i++] = verb;
+  }
+  return verbs;
+}
+
+tonic::Float32List CanvasPath::getPoints() {
+  int npoints = path_.countPoints();
+  tonic::Float32List points(Dart_NewTypedData(Dart_TypedData_kFloat32, npoints * 2));
+  const SkPoint *inpoints = SkPathPriv::PointData(path_);
+  for (int i = 0; i < npoints; i++) {
+    points[i*2  ] = inpoints[i].x();
+    points[i*2+1] = inpoints[i].y();
+  }
+  return points;
+}
+
+tonic::Float32List CanvasPath::getWeights() {
+  int nweights = SkPathPriv::ConicWeightCnt(path_);
+  tonic::Float32List weights(Dart_NewTypedData(Dart_TypedData_kFloat32, nweights));
+  const SkScalar *inweights = SkPathPriv::ConicWeightData(path_);
+  for (int i = 0; i < nweights; i++) {
+    weights[i] = inweights[i];
+  }
+  return weights;
 }
 
 bool CanvasPath::op(CanvasPath* path1, CanvasPath* path2, int operation) {
