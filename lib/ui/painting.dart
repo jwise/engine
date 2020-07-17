@@ -3100,6 +3100,12 @@ Float32List _encodeTwoPoints(Offset pointA, Offset pointB) {
 ///  * [Gradient](https://api.flutter.dev/flutter/painting/Gradient-class.html), the class in the [painting] library.
 ///
 class Gradient extends Shader {
+  bool extIsLinear;
+  Offset extFrom;
+  Offset extTo;
+  List<Color> extColors;
+  List<double> extColorStops;
+  TileMode extTileMode;
 
   void _constructor() native 'Gradient_constructor';
 
@@ -3143,6 +3149,13 @@ class Gradient extends Shader {
     final Float32List? colorStopsBuffer = colorStops == null ? null : Float32List.fromList(colorStops);
     _constructor();
     _initLinear(endPointsBuffer, colorsBuffer, colorStopsBuffer, tileMode.index, matrix4);
+    
+    extIsLinear = true;
+    extFrom = from;
+    extTo = to;
+    extColors = colors;
+    extColorStops = colorStops;
+    extTileMode = tileMode;
   }
   void _initLinear(Float32List endPoints, Int32List colors, Float32List? colorStops, int tileMode, Float64List? matrix4) native 'Gradient_initLinear';
 
