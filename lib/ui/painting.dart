@@ -2526,9 +2526,9 @@ class PathMetric {
 class _PathMeasure extends NativeFieldWrapperClass2 {
   Path fromPath;
 
-  _PathMeasure(Path path, bool forceClosed) {
+  _PathMeasure(Path path, bool forceClosed) :
+    fromPath = path {
     _constructor(path, forceClosed);
-    fromPath = path;
   }
   void _constructor(Path path, bool forceClosed) native 'PathMeasure_constructor';
 
@@ -3100,12 +3100,12 @@ Float32List _encodeTwoPoints(Offset pointA, Offset pointB) {
 ///  * [Gradient](https://api.flutter.dev/flutter/painting/Gradient-class.html), the class in the [painting] library.
 ///
 class Gradient extends Shader {
-  bool extIsLinear;
-  Offset extFrom;
-  Offset extTo;
-  List<Color> extColors;
-  List<double> extColorStops;
-  TileMode extTileMode;
+  bool extIsLinear = false;
+  Offset? extFrom;
+  Offset? extTo;
+  List<Color>? extColors;
+  List<double>? extColorStops;
+  TileMode? extTileMode;
 
   void _constructor() native 'Gradient_constructor';
 
